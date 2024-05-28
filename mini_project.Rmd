@@ -1,0 +1,339 @@
+---
+title: "Mini_project"
+author: "Sandeep Vemulapalli and Pavan Yachamaneni"
+date: "2022-10-27"
+output: html_document
+---
+
+```{r , echo=FALSE}
+set.seed(29071000)
+sim <- 10000
+nodes <- 15
+maxedge <- replicate(sim,0)
+maxloc <- replicate(sim,0)
+fullstore <- matrix(,ncol=15)
+affnity_mat=matrix(0,nrow=nodes,ncol = nodes)
+for(i in 1:sim){
+  dummy = matrix(0,nrow=nodes,ncol = nodes)
+  edges <- replicate(nodes, 0)
+  edges[1] = 1
+  edges[2] = 1
+  dummy[1,2]=1
+  dummy[2,1]=1
+  for(j in 3:nodes){
+    sumedge <- sum(edges)
+    edges[j] = 1
+    new <- sample(1:(j-1),1, prob = edges[1:(j-1)]/sumedge)
+    edges[new[1]]=edges[new]+1
+    dummy[j,new]=1
+    dummy[new,j]=1
+  }
+  fullstore <- rbind(fullstore,edges)
+  affnity_mat=affnity_mat+dummy
+}
+
+fullstore<- fullstore[2:10001,]
+row.names(fullstore)<-c(1:10000)
+fullstore=t(fullstore)
+fullstore[,1:20]
+```
+
+
+### Observation
+- In the Distance matrix, initial nodes has higher chances of getting connections and subsequently making its probability higher for upcoming child nodes and it repeats contineously.
+
+
+### Creating Affinity Matrix
+- Affinity or similarity matrix tells how close the 2 points in a space. Usually in graph scenario, neighbours are connected with minimum distance, so finding affinity matrix explicitely tells wether the given 2 points in the graph are neighbours or not.
+
+$$ Affinity \;Matrix \;=\exp(-\beta * Distance\;Matrix^2)\;\;;where \;\;\beta=\frac{1}{2\sigma^2} $$
+
+```{r , echo=FALSE}
+library(fields)
+library(reshape2)
+library(SNFtool)
+library(ggcorrplot)
+library(tidyverse)
+distance_matrix = (dist2(as.matrix(fullstore),as.matrix(fullstore)))^(1/2)
+standard_deviation <- sd(distance_matrix)
+real_affinity_mat <- exp(-distance_matrix^2/ (2*standard_deviation^2))
+real_affinity_mat
+```
+
+
+```{r , echo=FALSE}
+affnity_mat
+
+```
+
+### Result shows the affinity matrix 15 preferential attachment model nodes when performed with 10000 simulations.
+### In each field of the matrix represents in what number of simulation, the 2 nodes are connected.
+
+
+
+## Edge Statistics:
+- We can plot the histogram of each node and see what distribution does node follows after completing 10000 simulations.
+```{r,echo=FALSE}
+
+fullstoredf = as.data.frame(t(fullstore))
+ggplot(fullstoredf, aes(x=V1)) + geom_histogram(binwidth = 0.5,color="white", fill="green") + scale_x_continuous(name = "Edge distribution for Node 1") + scale_y_continuous(name = "Count")
+ggplot(fullstoredf, aes(x=V3)) + geom_histogram(binwidth = 0.5,color="white", fill="blue") + scale_x_continuous(name = "Edge distribution for Node 3") + scale_y_continuous(name = "Count")
+ggplot(fullstoredf, aes(x=V7)) + geom_histogram(binwidth = 0.5,color="white", fill="pink") + scale_x_continuous(name = "Edge distribution for Node 7") + scale_y_continuous(name = "Count")
+ggplot(fullstoredf, aes(x=V9)) + geom_histogram(binwidth = 0.5,color="white", fill="orange") + scale_x_continuous(name = "Edge distribution for Node 9") + scale_y_continuous(name = "Count")
+ggplot(fullstoredf, aes(x=V11)) + geom_histogram(binwidth = 0.5,color="white", fill="yellow") + scale_x_continuous(name = "Edge distribution for Node 11") + scale_y_continuous(name = "Count")
+
+
+```
+
+### Observation: Upon moving forward to higher nodes skewness is increasing as it is observed that later nodes are mostly connected to initial nodes which makes the probability higher.
+
+## Doing for 100 nodes
+```{r,echo=FALSE}
+set.seed(290710)
+sim <- 1000
+nodes <- 100
+maxedge <- replicate(sim,0)
+maxloc <- replicate(sim,0)
+fullstore100 <- matrix(,ncol=100)
+for(i in 1:sim){
+  edges <- replicate(nodes, 0)
+  edges[1] = 1
+  edges[2] = 1
+  for(j in 3:nodes){
+    sumedge <- sum(edges)
+    edges[j] = 1
+    new <- sample(1:(j-1),1, prob = edges[1:(j-1)]/sumedge)
+    edges[new[1]]=edges[new]+1
+  }
+  fullstore100 <- rbind(fullstore100,edges)
+}
+
+fullstore100<- fullstore100[2:1001,]
+row.names(fullstore100)<-c(1:1000)
+fullstore100=t(fullstore100)
+fullstore100[1:20,1:20]
+
+```
+```{r,echo=FALSE}
+fullstore100df = as.data.frame(t(fullstore100))
+ggplot(fullstore100df, aes(x=V10)) + geom_histogram(binwidth = 0.5,color="white", fill="royalblue4") + scale_x_continuous(name = "Edge distribution for Node 10") +
+scale_y_continuous(name = "Count")
+ggplot(fullstore100df, aes(x=V25)) + geom_histogram(binwidth = 0.5,color="white", fill="blue") + scale_x_continuous(name = "Edge distribution for Node 25") +
+scale_y_continuous(name = "Count")
+ggplot(fullstore100df, aes(x=V50)) + geom_histogram(binwidth = 0.5,color="white", fill="royalblue") + scale_x_continuous(name = "Edge distribution for Node 50") +
+scale_y_continuous(name = "Count")
+ggplot(fullstore100df, aes(x=V75)) + geom_histogram(binwidth = 0.5,color="white", fill="royalblue") + scale_x_continuous(name = "Edge distribution for Node 75") +
+scale_y_continuous(name = "Count")
+ggplot(fullstore100df, aes(x=V99)) + geom_histogram(binwidth = 0.5,color="white", fill="royalblue") + scale_x_continuous(name = "Edge distribution for Node 100") +
+scale_y_continuous(name = "Count")
+```
+
+### Observation for 100 nodes is similar to that off 15 nodes but their rates is further skewing down rapidly that with 15 nodes making larger number nodes biased towards samller connections that has large descrepensies to samller numbered nodes.x
+
+```{r, echo=FALSE}
+
+
+data<-read.csv("//Users//sandeepvemulapalli//Desktop//stt810//nndb_flat.csv",header=TRUE)
+
+
+```
+
+### National Nutrition Database (NNDB)
+
+The nndb is a collection of different food categories with their corresponsing ingredients and their repsective nutritional values like protieins,fats, carbs, sugars, fibres vitamins and minerals.
+
+This dataset also illustrates US recommended dietary allowance( USRDA). The Original dataset was collected by US department of agriculture having a subsidiary department named Methods and Application of Food Composition Laboratory: Beltsville, MD.
+```{r,echo=FALSE}
+```
+
+
+```{r,echo=FALSE}
+names(data)
+```
+```{r,echo=FALSE}
+str(data)
+```
+
+
+```{r,echo=FALSE}
+
+summary(data)
+
+```
+
+
+### In the above step, we have obtained the summary/ description of every column like mean, min, max , 1st quartile, 3rd percentile values.
+
+```{r,echo=TRUE}
+
+new_data <- subset(data,select = -c(1:7))
+
+cor_data<-cor(new_data)
+
+cor_data
+```
+```{r,echo=FALSE}
+library(corrplot)
+corrplot(cor_data,method="color",title = "\n\n Correlation Plot nndb",)
+
+dim(cor_data)
+```
+
+
+```{r,echo=FALSE}
+c_df <- Hmisc::rcorr(cor(cor_data), type='spearman')
+
+library(corrplot)
+corrplot(corr=c_df$r[1:6, 7:14],  
+         method='color',sig.level=0.05,addCoef.col=1,number.cex=.8)
+```
+
+### Observation
+Considering 0.6 as a highly correlated metric,more than half of the entries in the correlation matrix are highly correlated. This suggests that we can use dimensionality reduction techniques effectively to remove redundancies inside the attributes. Simply put taking foods rich in one vitamin instead of others is enough.
+
+
+```{r,echo=FALSE}
+corrplot(corr=c_df$r[15:23, 23:31], sig.level=0.05, method='color', addCoef.col=1,
+         number.cex=.8)
+```
+
+
+
+
+```{r,echo=FALSE}
+corrplot(corr=c_df$r[1:6,15:23], sig.level=0.05, method='color', addCoef.col=1,
+         number.cex=.8)
+```
+
+
+```{r,echo=FALSE}
+corrplot(corr=c_df$r[7:14,15:23], sig.level=0.05, method='color', addCoef.col=1,
+         number.cex=.8)
+```
+
+
+```{r,echo=FALSE}
+library(ggplot2)
+ggplot(data, aes(x= Sugar_g  )) + geom_histogram(binwidth = 0.5,color="white", fill="green") + xlim(0,10) + ylim(0,500)
+```
+
+
+```{r,echo=FALSE}
+#dat=data.frame(FoodGroup=c("Dairy and Egg Products","Spices and Herbs",value=c(Energy_kcal)))
+#dat
+
+data_diary <- subset(data, FoodGroup == "Dairy and Egg Products")
+
+```
+
+
+
+### We have done a subset of Diary and Egg products since we decided to analyse the nutrition values of three categories: Protein, Fats & Energy_cal in Diary products.
+
+```{r,echo=FALSE}
+Protein_diary <- data_diary$Protein_g
+hist(Protein_diary,xlab="Protein(g)")
+```
+### Observation-
+From the above histogram, we can infer that majority of the items in dairy and Egg 
+products have protein values in range of 0-40grams predominantly in the 01-10 grams sector to be specific. However,the values are not significantly higher than 40grams. Maybe its due to less quantities of food items taken under observation.
+
+
+```{r,echo=FALSE}
+Fat_diary<-data_diary$Fat_g 
+hist(Fat_diary,xlab="Fat(g)")
+```
+### Observation
+For the above figure, Fat content in diary products is generally between 0-10 grams since this value is more than 120. The items taken in sample have medium fat values roughly around 100 items with 10 to 30 grams. Finally, there are very less number of items with fat content greater than 40 grams.
+
+
+```{r,echo=FALSE}
+Energy_diary<-data_diary$Energy_kcal
+hist(Energy_diary,xlab="Energy(Kcal)")
+```
+
+### Observation
+
+From our observation, diary and Egg products did have equal number of items with energy values 100kcal and 300-400kcal. Though there are item with very high energy values the count is very less. I conclude that there Egg and milk products have higher proteins and fats.
+
+```{r,echo=FALSE}
+data_baby<-subset(data, FoodGroup == "Baby Foods")
+
+```
+
+### Now lets peek in to the Baby foods category of the Food group column in the dataset. we have 
+seggregated the dataset as per the requirement as shown above.
+
+```{r,echo=FALSE}
+Protein_Baby <- data_baby$Protein_g
+hist(Protein_Baby,xlab='Protein_g')
+```
+
+### Observation
+Baby foods have proteins with most of them having values ranging from 0-5grams. There is an exponential decrease trend in the graph with 10-15 grams range as an exception.
+
+
+
+```{r,echo=FALSE}
+Fat_baby<-data_baby$Fat_g
+hist(Fat_baby,xlab='Fat_g')
+```
+
+### Observation
+The  food consumed by babies have decent amount of fats. Some products have very high fats 25-30 grams but we are not sure if this is acceptable to be consumed by babies. Moreover, many products fall under 0-5 grams range.
+
+
+```{r,echo=FALSE}
+Energy_baby<- data_baby$Energy_kcal
+hist(Energy_baby,xlab='Energy_kcal')
+```
+
+### Observation
+
+From the above figure, we can conclude that most of the baby products have 50-100kcal. This is true in case of items we considered from the datatset.
+
+```{r,echo=FALSE}
+data_breakfast<- subset(data, FoodGroup == "Breakfast Cereals")
+```
+
+
+```{r,echo=FALSE}
+protein_bf <- data_breakfast$Protein_g
+hist(protein_bf,xlab='Protein_g')
+```
+
+
+### Observation
+
+The protein values 5-10grams are predominant in the breastfast items. A same number of items roughly around 75 have proteins values ranging from 0-5 grams and 10-15 grams.
+
+```{r,echo=FALSE}
+Fat_bf<- data_breakfast$Fat_g
+hist(Fat_bf,xlab='Fat_g')
+```
+
+
+### Observation
+
+The fats in brakefast items are generally from 0-6 grams. 
+
+```{r,echo=FALSE}
+Energy_bf<-data_breakfast$Energy_kcal
+hist(Energy_bf,xlab='Energy_kcal')
+```
+
+### FINAL SUMMARY
+
+1. Diary and Egg products have higher protein values compared to other categores. Breakfast items also have a decent amount of proteins but on a whole, the mean values are higher for Egg and diary products. Diary products are also very rich in fats.
+
+2. Brekfast items have higher energy products than the rest of the two categories we have examined.  Egg and milk products have values competing with breakfast items but they are just enough to stand second surpassing baby products.
+
+3. In general baby products might have a balance of all vitamins and minerals. This might be the reason why it doesn't have one dominant ingredient/nutrition parameter.
+
+
+4. On a whole dataset, from the heatmap we have generated above,Considering 0.6 as a highly correlated metric,more than half of the entries in the correlation matrix are highly correlated. This suggests that we can use dimensionality reduction techniques effectively to remove redundancies inside the attributes. Simply put taking foods rich in one vitamin instead of others is enough.
+
+```{r,echo=FALSE}
+
+```
+
